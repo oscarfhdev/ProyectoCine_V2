@@ -1,20 +1,20 @@
 package _DAM.Cine_V2.mapper;
 
-import _DAM.Cine_V2.dto.FuncionDTO;
+import _DAM.Cine_V2.dto.request.FuncionRequestDTO;
+import _DAM.Cine_V2.dto.response.FuncionResponseDTO;
 import _DAM.Cine_V2.modelo.Funcion;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { PeliculaMapper.class, SalaMapper.class })
 public interface FuncionMapper {
 
-    @Mapping(target = "peliculaId", source = "pelicula.id")
-    @Mapping(target = "salaId", source = "sala.id")
-    FuncionDTO toDTO(Funcion funcion);
+    FuncionResponseDTO toResponse(Funcion funcion);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "pelicula", ignore = true)
     @Mapping(target = "sala", ignore = true)
     @Mapping(target = "entradas", ignore = true)
-    Funcion toEntity(FuncionDTO funcionDTO);
+    Funcion toEntity(FuncionRequestDTO funcionRequestDTO);
 }

@@ -1,7 +1,8 @@
 package _DAM.Cine_V2.servicio;
 
-import _DAM.Cine_V2.dto.EntradaDTO;
-import _DAM.Cine_V2.dto.VentaDTO;
+import _DAM.Cine_V2.dto.request.EntradaRequestDTO;
+import _DAM.Cine_V2.dto.request.VentaRequestDTO;
+import _DAM.Cine_V2.dto.response.VentaResponseDTO;
 import _DAM.Cine_V2.mapper.EntradaMapper;
 import _DAM.Cine_V2.mapper.VentaMapper;
 import _DAM.Cine_V2.modelo.*;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,66 +24,61 @@ public class VentaService {
     private final VentaRepository ventaRepository;
     private final UsuarioRepository usuarioRepository;
     private final FuncionRepository funcionRepository;
-    // We don't necessarily need EntradaService if we implement logic here, but
-    // using repository approach
     private final EntradaRepository entradaRepository;
     private final VentaMapper ventaMapper;
     private final EntradaMapper entradaMapper;
 
-    public List<VentaDTO> findAll() {
+    public List<VentaResponseDTO> findAll() {
         return ventaRepository.findAll().stream()
-                .map(ventaMapper::toDTO)
+                .map(ventaMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public VentaDTO findById(Long id) {
+    public VentaResponseDTO findById(Long id) {
         return ventaRepository.findById(id)
-                .map(ventaMapper::toDTO)
+                .map(ventaMapper::toResponse)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + id));
     }
 
     @Transactional
-    public VentaDTO save(VentaDTO ventaDTO) {
-        Venta venta = ventaMapper.toEntity(ventaDTO);
+    public VentaResponseDTO save(VentaRequestDTO dto) {
+        Venta venta = ventaMapper.toEntity(dto);
+        venta.setFecha(LocalDateTime.now());
+        venta.setEstado("COMPLETADA");
 
-        if (ventaDTO.usuarioId() != null) {
-            Usuario usuario = usuarioRepository.findById(ventaDTO.usuarioId())
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ventaDTO.usuarioId()));
-            venta.setUsuario(usuario);
-        }
+        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + dto.getUsuarioId()));
+        venta.setUsuario(usuario);
 
-        // If we want to create tickets along with sale:
-        if (ventaDTO.entradas() != null) {
-            Set<Entrada> entradasEntities = new HashSet<>();
-            for (EntradaDTO eDTO : ventaDTO.entradas()) {
-                // Check function
-                if (eDTO.funcionId() == null)
-                    throw new RuntimeException("Entrada sin funcion ID");
-                Funcion funcion = funcionRepository.findById(eDTO.funcionId())
-                        .orElseThrow(() -> new RuntimeException("Funcion no encontrada " + eDTO.funcionId()));
+        Set<Entrada> entradasEntities = new HashSet<>();
+        double importeTotal = 0;
 
-                // Check availability (Naive check, assuming no concurrency issues for this
-                // exercise)
-                boolean occupied = entradaRepository.findByFuncionId(funcion.getId()).stream()
-                        .anyMatch(e -> e.getFila() == eDTO.fila() && e.getAsiento() == eDTO.asiento()
-                                && e.getEstado() != EstadoEntrada.CANCELADA);
+        for (EntradaRequestDTO eDTO : dto.getEntradas()) {
+            Funcion funcion = funcionRepository.findById(eDTO.getFuncionId())
+                    .orElseThrow(() -> new RuntimeException("Funcion no encontrada " + eDTO.getFuncionId()));
 
-                if (occupied) {
-                    throw new RuntimeException("Asiento ocupado: " + eDTO.fila() + "-" + eDTO.asiento());
-                }
+            boolean occupied = entradaRepository.findByFuncionId(funcion.getId()).stream()
+                    .anyMatch(e -> e.getFila() == eDTO.getFila() && e.getAsiento() == eDTO.getAsiento()
+                            && e.getEstado() != EstadoEntrada.CANCELADA);
 
-                Entrada entrada = entradaMapper.toEntity(eDTO);
-                entrada.setFuncion(funcion);
-                entrada.setVenta(venta);
-                if (entrada.getEstado() == null)
-                    entrada.setEstado(EstadoEntrada.VENDIDA);
-                entradasEntities.add(entrada);
+            if (occupied) {
+                throw new RuntimeException("Asiento ocupado: " + eDTO.getFila() + "-" + eDTO.getAsiento());
             }
-            venta.setEntradas(entradasEntities);
+
+            Entrada entrada = entradaMapper.toEntity(eDTO);
+            entrada.setFuncion(funcion);
+            entrada.setVenta(venta);
+            entrada.setEstado(EstadoEntrada.VENDIDA);
+            entradasEntities.add(entrada);
+
+            importeTotal += funcion.getPrecio();
         }
+
+        venta.setEntradas(entradasEntities);
+        venta.setImporteTotal(importeTotal);
 
         Venta saved = ventaRepository.save(venta);
-        return ventaMapper.toDTO(saved);
+        return ventaMapper.toResponse(saved);
     }
 
     public void deleteById(Long id) {

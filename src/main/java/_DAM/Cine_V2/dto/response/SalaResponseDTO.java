@@ -1,0 +1,15 @@
+package _DAM.Cine_V2.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class SalaResponseDTO {
+
+        private Long id;
+        private String nombre;
+        private int capacidad;
+}
