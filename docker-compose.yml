@@ -3,14 +3,25 @@ services:
     container_name: cine_db_container
     image: postgres:15
     environment:
-      POSTGRES_USER: cine_user
-      POSTGRES_PASSWORD: cine_password
-      POSTGRES_DB: cine_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+
+  pgadmin:
+    container_name: cine_v2_pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "8081:80"
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:
