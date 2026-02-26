@@ -1,7 +1,10 @@
 package _DAM.Cine_V2.controlador;
 
+import _DAM.Cine_V2.dto.login.LoginRequestDTO;
+import _DAM.Cine_V2.dto.login.LoginResponseDTO;
 import _DAM.Cine_V2.dto.request.UsuarioRequestDTO;
 import _DAM.Cine_V2.dto.response.UsuarioResponseDTO;
+import _DAM.Cine_V2.modelo.Usuario;
 import _DAM.Cine_V2.servicio.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,4 +47,23 @@ public class UsuarioController {
         usuarioService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @RestController
+    @RequestMapping("/api/v1/auth")
+    public class AuthController {
+
+        private final UsuarioService usuarioService;
+
+        public AuthController(UsuarioService usuarioService) {
+            this.usuarioService = usuarioService;
+        }
+
+        @PostMapping("/login")
+        public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest) {
+            LoginResponseDTO usuario = usuarioService.login(loginRequest);
+
+            return ResponseEntity.ok(usuario);
+        }
+    }
+
 }
