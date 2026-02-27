@@ -2,6 +2,7 @@ package _DAM.Cine_V2.util;
 
 import _DAM.Cine_V2.modelo.*;
 import _DAM.Cine_V2.repositorio.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ public class DataLoader implements CommandLineRunner {
         private final PeliculaRepository peliculaRepository;
         private final SalaRepository salaRepository;
         private final FuncionRepository funcionRepository;
+        private final PasswordEncoder passwordEncoder;
 
         @Override
         public void run(String... args) throws Exception {
@@ -35,7 +37,7 @@ public class DataLoader implements CommandLineRunner {
                 // Users
                 Usuario admin = Usuario.builder()
                                 .email("admin@cine.com")
-                                .password("admin") // Plain text for demo
+                                .password(passwordEncoder.encode("admin"))
                                 .enabled(true)
                                 .roles(Set.of(roleAdmin))
                                 .build();
@@ -43,7 +45,7 @@ public class DataLoader implements CommandLineRunner {
 
                 Usuario user = Usuario.builder()
                                 .email("user@cine.com")
-                                .password("user")
+                                .password(passwordEncoder.encode("user"))
                                 .enabled(true)
                                 .roles(Set.of(roleUser))
                                 .build();
