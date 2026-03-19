@@ -1,4 +1,3 @@
-
 ---
 theme: dracula
 background: https://source.unsplash.com/collection/94734566/1920x1080
@@ -6,10 +5,10 @@ class: text-center
 highlighter: shiki
 lineNumbers: true
 info: |
-## Resolución Práctica 1 - 2T
-IES Antonio Gala - 2º DAM
+  ## Resolución Práctica 1 - 2T
+  IES Antonio Gala - 2º DAM
 drawings:
-persist: false
+  persist: false
 transition: slide-left
 title: Resolución Práctica 1 - CineV2
 mdc: true
