@@ -10,8 +10,9 @@ import _DAM.Cine_V2.modelo.Rol;
 import _DAM.Cine_V2.modelo.Usuario;
 import _DAM.Cine_V2.repositorio.RolRepository;
 import _DAM.Cine_V2.repositorio.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
+import _DAM.Cine_V2.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,8 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final UsuarioMapper usuarioMapper;
-    private final PasswordEncoder encoder; // Inyectado
+    private final PasswordEncoder passwordEncoder; // Inyectado
+    private final JwtUtil jwtUtil;
 
 
     public List<UsuarioOutputDTO> findAll() {
@@ -118,16 +120,23 @@ public class UsuarioService {
 //        );
 //    }
 
+    // OJO: HAY QUE INJECTAR private final JwtUtil jwtUtil; EN EL SERVICIO
     public LoginResponseDTO login(LoginRequestDTO req) {
-        Usuario u = usuarioRepository.findByEmail(req.email())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado")); // OJO: Usar BadCredentialsException después
+        Usuario u =  usuarioRepository.findByEmail(req.email())
+                .orElseThrow(() -> new BadCredentialsException("Usuario no encontrado"));
 
-        // 🔐 COMPARAR (Raw vs Hash)
-        if (!encoder.matches(req.password(), u.getPassword())) {
-            throw new RuntimeException("Credenciales incorrectas");
-        }
+        if (!passwordEncoder.matches(req.password(), u.getPassword()))
+            throw new BadCredentialsException("Contraseña incorrecta");
 
-        return new LoginResponseDTO(u.getEmail(), "Login OK", null);
+        // Generamos el pase VIP (Token)
+        String token = jwtUtil.generateToken(u);
+
+        // Devolvemos DTO con todo
+        return new LoginResponseDTO(
+                u.getEmail(),
+                "Login exitoso",
+                token
+        );
     }
 
     public void register(RegisterRequestDTO req) {
@@ -135,7 +144,7 @@ public class UsuarioService {
         u.setEmail(req.email());
 
         // CIFRAR ANTES DE GUARDAR
-        u.setPassword(encoder.encode(req.password()));
+        u.setPassword(passwordEncoder.encode(req.password()));
         //u.setRol("USER");
 
         Rol rolUser = rolRepository.findByNombre("USER")
