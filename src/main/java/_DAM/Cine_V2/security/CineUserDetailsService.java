@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class CineUserDetailsService implements UserDetailsService {
-
+    //prueba
     private final UsuarioRepository repo;
 
     @Override
